@@ -7,6 +7,8 @@
  extern "C" {
 #endif
 
+#define SOFTWARE_VERSION 		(char*)"2.0.0"
+
 #define MAX_KEYLESS_SENSOR		16
 
 

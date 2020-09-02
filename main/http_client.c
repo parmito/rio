@@ -715,7 +715,7 @@ unsigned char TaskHttpCli_GetTelegram(sMessageType *psMessage)
 {
     unsigned char boError = true;
 
-	char* cLocalBuffer = (char*) malloc(256);
+	static char cLocalBuffer[256];
     memset(cLocalBuffer,0,256);
 
 	char* cTempBuffer = (char*) malloc(256);
@@ -735,23 +735,69 @@ unsigned char TaskHttpCli_GetTelegram(sMessageType *psMessage)
 
     ESP_LOGI(TAG, "%s\r\n",ptr);
 
+    long int liTimestamp;
+	struct tm  ts;
+	static char cFormatTime[32];
+    memset(cFormatTime,0,sizeof(cFormatTime));
+
     if(strcmp(ptr,"SENSOR1") == 0)
     {
-    	sprintf(cLocalBuffer,"https://api.telegram.org/bot1318631102:AAHQZ0cHw_BEssmSUMpuVVePRZfp72AKgXA/sendMessage?chat_id=-408374433&text=%s","JANELA_FRENTE");
-    }
-    if(strcmp(ptr,"SENSOR2") == 0)
-    {
-    	sprintf(cLocalBuffer,"https://api.telegram.org/bot1318631102:AAHQZ0cHw_BEssmSUMpuVVePRZfp72AKgXA/sendMessage?chat_id=-408374433&text=%s","PORTA_FRENTE");
-    }
-    if(strcmp(ptr,"SENSOR3") == 0)
-    {
-    	sprintf(cLocalBuffer,"https://api.telegram.org/bot1318631102:AAHQZ0cHw_BEssmSUMpuVVePRZfp72AKgXA/sendMessage?chat_id=-408374433&text=%s","PORTA_COZINHA");
-    }
-    if(strcmp(ptr,"SENSOR5") == 0)
-    {
-    	sprintf(cLocalBuffer,"https://api.telegram.org/bot1318631102:AAHQZ0cHw_BEssmSUMpuVVePRZfp72AKgXA/sendMessage?chat_id=-408374433&text=%s","PORTAOZINHO");
-    }
+        ptr = strtok (NULL, ",");
+        liTimestamp = atol(ptr);
+        ts = *localtime((time_t*)&liTimestamp);
+        ts.tm_hour = ts.tm_hour - 3;
+        strftime(cFormatTime, sizeof(cFormatTime), "%d/%m/%Y-%H:%M:%S", &ts);
 
+    	sprintf(cLocalBuffer,"https://api.telegram.org/bot1308187759:AAHhSR2vp49o5vH_dGQB3qybESIGQ34MDG8/sendMessage?chat_id=-432924225&text=%s,%s","JANELA_FRENTE",cFormatTime);
+    }
+    else
+    {
+        if(strcmp(ptr,"SENSOR2") == 0)
+        {
+
+            ptr = strtok (NULL, ",");
+            liTimestamp = atol(ptr);
+            ts = *localtime((time_t*)&liTimestamp);
+            ts.tm_hour = ts.tm_hour - 3;
+            strftime(cFormatTime, sizeof(cFormatTime), "%d/%m/%Y-%H:%M:%S", &ts);
+
+        	sprintf(cLocalBuffer,"https://api.telegram.org/bot1308187759:AAHhSR2vp49o5vH_dGQB3qybESIGQ34MDG8/sendMessage?chat_id=-432924225&text=%s,%s","PORTA_FRENTE",cFormatTime);
+        }
+        else
+        {
+            if(strcmp(ptr,"SENSOR3") == 0)
+            {
+                ptr = strtok (NULL, ",");
+                liTimestamp = atol(ptr);
+                ts = *localtime((time_t*)&liTimestamp);
+                ts.tm_hour = ts.tm_hour - 3;
+                strftime(cFormatTime, sizeof(cFormatTime), "%d/%m/%Y-%H:%M:%S", &ts);
+
+            	sprintf(cLocalBuffer,"https://api.telegram.org/bot1308187759:AAHhSR2vp49o5vH_dGQB3qybESIGQ34MDG8/sendMessage?chat_id=-432924225&text=%s,%s","PORTA_COZINHA",cFormatTime);
+            }
+            else
+            {
+                if(strcmp(ptr,"SENSOR4") == 0)
+                {
+                    ptr = strtok (NULL, ",");
+                    liTimestamp = atol(ptr);
+                    ts = *localtime((time_t*)&liTimestamp);
+                    ts.tm_hour = ts.tm_hour - 3;
+                    strftime(cFormatTime, sizeof(cFormatTime), "%d/%m/%Y-%H:%M:%S", &ts);
+                	sprintf(cLocalBuffer,"https://api.telegram.org/bot1308187759:AAHhSR2vp49o5vH_dGQB3qybESIGQ34MDG8/sendMessage?chat_id=-432924225&text=%s,%s","PORTAOZINHO",cFormatTime);
+                }
+                else
+                {
+                    ptr = strtok (NULL, ",");
+                    liTimestamp = atol(ptr);
+                    ts = *localtime((time_t*)&liTimestamp);
+                    ts.tm_hour = ts.tm_hour - 3;
+                    strftime(cFormatTime, sizeof(cFormatTime), "%d/%m/%Y-%H:%M:%S", &ts);
+                	sprintf(cLocalBuffer,"https://api.telegram.org/bot1308187759:AAHhSR2vp49o5vH_dGQB3qybESIGQ34MDG8/sendMessage?chat_id=-432924225&text=%s,%s","NOVO_SENSOR",cFormatTime);
+                }
+            }
+        }
+    }
     boError = http_get_telegram(cLocalBuffer);
 
 	stHttpCliMsg.ucSrc = SRC_HTTPCLI;
@@ -759,7 +805,6 @@ unsigned char TaskHttpCli_GetTelegram(sMessageType *psMessage)
 	stHttpCliMsg.ucEvent = EVENT_IO_GSM_COMMUNICATING;
 	xQueueSend( xQueueDebug, ( void * )&stHttpCliMsg, 0);
 
-	free(cLocalBuffer);
 	free(cTempBuffer);
     return(boError);
 }
@@ -878,8 +923,9 @@ static sStateMachineType const gasTaskHttpCli_Syncing[] =
 {
     /* Event        Action routine      Next state */
     //  State specific transitions
-	{EVENT_HTTPCLI_GET_TIMESTAMP,	TaskHttpCli_GetTimestamp, 	    TASKHTTPCLI_COMMUNICATING,           		TASKHTTPCLI_SYNCING        		},
-    {EVENT_HTTPCLI_NULL,      		TaskHttpCli_IgnoreEvent,        TASKHTTPCLI_SYNCING,						TASKHTTPCLI_SYNCING		}
+	{EVENT_HTTPCLI_GET_TIMESTAMP,	TaskHttpCli_GetTimestamp, 	    TASKHTTPCLI_COMMUNICATING,           		TASKHTTPCLI_SYNCING        				},
+	{EVENT_HTTPCLI_DISCONNECTED,  	TaskHttpCli_Disconnected, 	    TASKHTTPCLI_IDLING,           				TASKHTTPCLI_IDLING        				},
+    {EVENT_HTTPCLI_NULL,      		TaskHttpCli_IgnoreEvent,        TASKHTTPCLI_SYNCING,						TASKHTTPCLI_SYNCING						}
 };
 
 static sStateMachineType const gasTaskHttpCli_Communicating[] =
